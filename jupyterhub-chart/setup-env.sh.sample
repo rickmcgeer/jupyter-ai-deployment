@@ -1,9 +1,16 @@
-export GOOGLE_OAUTH_CLIENT_ID=
+# Get the live values from `helm get values jupyter-ai-1 -n jupyter-ai`
+# (see the global-data-plane-hub repo) - GOOGLE_OAUTH_CLIENT_ID is in
+# there in plaintext; client_secret and GDP_API_TOKEN need
+# `kubectl get secret hub -n jupyter-ai -o yaml` (see that repo's README).
+export GOOGLE_OAUTH_CLIENT_ID=980525895986-2bcrhlsc5ecnlnan8vptku8eaduh4pfq.apps.googleusercontent.com
 export GOOGLE_OAUTH_CLIENT_SECRET=
 export NAMESPACE=jupyter-ai
-export HUB_URL=jupyter-ai.berkeley.edu
-export GOOGLE_CLOUD_PROJECT=
+export HUB_URL=bearborg.global-data-plane.org
+export GOOGLE_CLOUD_PROJECT=civil-pattern-439416-k1
 export VERTEXAI_LOCATION=us-central1
 # Kubernetes ServiceAccount name from setup-workload-identity.sh - must
 # match the ksa-name argument you ran it with (default: jupyter-ai-vertex).
 export JUPYTER_KSA=jupyter-ai-vertex
+# Shared token between the Hub and gdp-service - must match
+# GDP_SERVICE_API_TOKEN in gdp-service's own Deployment env.
+export GDP_API_TOKEN=

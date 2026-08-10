@@ -7,6 +7,18 @@ pattern as `engageLively/coreshell-hub`'s `coreshell-drive-deployment`, pared
 down to just what this deployment needs - no drive-service, no per-org
 sidecar services.
 
+**This is an in-place cutover, not a fresh install.** `values-template.yaml`
+targets the *existing* live release - `jupyter-ai-1` in namespace
+`jupyter-ai`, cluster `jupyter-ai-cluster` (project
+`civil-pattern-439416-k1`, zone `us-west2-a`), serving
+`bearborg.global-data-plane.org` - and carries forward what needs to
+survive the migration (`gdp-service`'s Hub registration, the custom
+BearBorg branding). See the
+[`global-data-plane-hub`](https://github.com/rickmcgeer/global-data-plane-hub)
+repo for the full snapshot of what's being replaced, and why (short
+version: the old self-hosted + external LiteLLM proxy setup is retired -
+Jupyter AI v3 has LiteLLM built in now).
+
 ## What this solves: the builtin Vertex AI access
 
 `jupyter-ai-image` seeds every user's default Jupyter AI model to Gemini via
@@ -39,12 +51,13 @@ option.
 ## Deploy
 
 ```bash
+gcloud container clusters get-credentials jupyter-ai-cluster --zone us-west2-a --project civil-pattern-439416-k1
 ./scripts/setup-workload-identity.sh "$GOOGLE_CLOUD_PROJECT"
 cd jupyterhub-chart
-cp setup-env.sh.sample setup-env.sh   # fill in OAuth client ID/secret, GCP project, hub URL, JUPYTER_KSA
+cp setup-env.sh.sample setup-env.sh   # fill in client secret and GDP_API_TOKEN - see the file's own comments for where to get them
 ./prepare-values.sh                   # renders values.yaml from values-template.yaml
 cd ..
-./scripts/deploy.sh
+./scripts/deploy.sh                   # upgrades jupyter-ai-1 in place - see the "in-place cutover" note above
 ```
 
 ## Local testing
@@ -53,10 +66,11 @@ Workload Identity is GKE-only - there's no way to exercise the builtin
 Vertex AI path on a local cluster (minikube, kind, Docker Desktop
 Kubernetes). `values-local.yaml` skips that wiring entirely and is only
 useful for checking the Hub/chart/image come up and the UI renders (no TLS,
-dummy auth):
+dummy auth). Give it its own release name - the default (`jupyter-ai-1`) is
+the real production release, not something to reuse for local testing:
 
 ```bash
-./scripts/deploy.sh jupyter-ai jupyterhub-chart/values-local.yaml
+./scripts/deploy.sh jupyter-ai-local jupyter-ai jupyterhub-chart/values-local.yaml
 kubectl port-forward -n jupyter-ai svc/proxy-public 8080:80
 ```
 

@@ -9,6 +9,19 @@
 # JUPYTER_KSA          - Kubernetes ServiceAccount name bound to the Vertex
 #                         AI GCP service account via Workload Identity (see
 #                         scripts/setup-workload-identity.sh)
+# GDP_API_TOKEN        - shared token between the Hub and gdp-service; must
+#                         match GDP_SERVICE_API_TOKEN in gdp-service's own
+#                         Deployment env (see global-data-plane-hub repo)
+#
+# This targets an IN-PLACE CUTOVER of the live jupyter-ai-1 release
+# (cluster jupyter-ai-cluster, project civil-pattern-439416-k1, us-west2-a)
+# - see the global-data-plane-hub repo for what's being replaced/dropped/kept
+# and why. Not a fresh install: `helm upgrade` this over the existing
+# release, don't `--install` a differently-named one.
+#
+# proxy.secretToken is deliberately left unset here (not regenerated) - z2jh
+# looks up the existing Secret on upgrade and reuses it when omitted, so
+# leaving it out avoids needing the live token in this file at all.
 
 proxy:
   https:
@@ -56,6 +69,24 @@ singleuser:
     guarantee: 0.1
 
 hub:
+  # These two ConfigMaps (bearborg-static: the custom welcome page;
+  # bearborg-custom-templates: home/login/spawn.html overrides) already
+  # exist in-cluster from the prior deployment and aren't touched by this
+  # Helm release - just referenced by name. See global-data-plane-hub repo
+  # for their content if they ever need to be recreated from scratch.
+  extraVolumeMounts:
+    - name: bearborg-static
+      mountPath: /srv/bearborg/static
+    - name: bearborg-custom-templates
+      mountPath: /etc/jupyterhub/custom_templates
+  extraVolumes:
+    - name: bearborg-static
+      configMap:
+        name: bearborg-static
+    - name: bearborg-custom-templates
+      configMap:
+        name: bearborg-custom-templates
+
   extraConfig:
     announcement: |
       c.JupyterHub.template_vars = {
@@ -67,9 +98,72 @@ hub:
         </div>
         '''
       }
+    # Serves bearborg-static's index.html at /hub/bearborg/ - carried over
+    # unchanged from the live deployment.
+    bearborgHandler: |
+      from tornado.web import StaticFileHandler
+
+      class BearBorgHandler(StaticFileHandler):
+        def parse_url_path(self, url_path):
+          if not url_path:
+              return ''
+          return url_path
+
+      c.JupyterHub.extra_handlers = [
+        (r"/bearborg(?:/(.*))?", BearBorgHandler, {
+          "path": "/srv/bearborg/static",
+          "default_filename": "index.html",
+        }),
+      ]
+    # Registers gdp (the Global Data Plane - NOT part of this Helm release,
+    # see raw-manifests/gdp-service.yaml in global-data-plane-hub) as an
+    # OAuth-protected Hub service. Carried over unchanged except the token,
+    # which is now templated instead of hardcoded.
+    gdp-service-config: |
+      c.JupyterHub.load_roles = getattr(c.JupyterHub, "load_roles", [])
+      c.JupyterHub.load_roles.append(
+        {
+          "name": "user",
+          "scopes": [
+            "self",
+            "access:servers",
+            "access:services",
+          ],
+          "users": ["*"],
+        }
+      )
+      c.JupyterHub.load_roles.append(
+        {
+          "name": "gdp-role",
+          "scopes": [
+            "access:services!service=gdp",
+            "self",
+            "read:users",
+            "tokens",
+          ],
+          "services": ["gdp"],
+          "users": ["*"],
+        }
+      )
+
+      c.JupyterHub.services.append(
+        {
+          'name': 'gdp',
+          'url': 'http://gdp-service.jupyter-ai.svc.cluster.local:5000',
+          'api_token': '$GDP_API_TOKEN',
+          'oauth_redirect_uri': 'https://$HUB_URL/services/gdp/callback',
+          'oauth_no_confirm': True,
+          'oauth_client_id': 'service-gdp'
+        }
+      )
+
   config:
     JupyterHub:
       authenticator_class: google
+      allow_origin: "*"
+      disable_check_xsrf: true
+      template_paths:
+        - /etc/jupyterhub/custom_templates
     GoogleOAuthenticator:
       username_claim: email
       client_id: $GOOGLE_OAUTH_CLIENT_ID
@@ -79,18 +173,26 @@ hub:
         - openid
         - email
         - profile
-      # Restrict to Berkeley accounts rather than any Google account. Add
-      # specific non-berkeley.edu users to Authenticator.allowed_users below
-      # if needed.
       hosted_domain:
         - berkeley.edu
+        - mcgeer.com
+        - lbl.gov
       login_service: "Berkeley"
     Authenticator:
-      allow_all: false
+      allow_all: true
+      allow_existing_users: true
       admin_users:
-        # TODO: fill in
-        - rick.mcgeer@berkeley.edu
-      allowed_users: []
+        - mcgeer@berkeley.edu
+        - lutz@berkeley.edu
+        - awschmeder@lbl.gov
+
+  # No hub.services entry needed for gdp - it's registered above via
+  # extraConfig's gdp-service-config instead, because it needs OAuth
+  # protection (api_token, oauth_redirect_uri, oauth_client_id) that the
+  # simple `services.<name>.url` shorthand below doesn't support. hello
+  # (smoke test) and litellm (retired proxy, see global-data-plane-hub's
+  # README) both used that shorthand and are dropped along with them -
+  # leaving nothing left to put here.
 
 cull:
   enabled: true
