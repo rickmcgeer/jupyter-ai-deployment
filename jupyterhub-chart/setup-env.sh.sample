@@ -1,0 +1,6 @@
+export GOOGLE_OAUTH_CLIENT_ID=
+export GOOGLE_OAUTH_CLIENT_SECRET=
+export NAMESPACE=jupyter-ai
+export HUB_URL=jupyter-ai.berkeley.edu
+export GOOGLE_CLOUD_PROJECT=
+export VERTEXAI_LOCATION=us-central1

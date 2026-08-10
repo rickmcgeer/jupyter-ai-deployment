@@ -1,0 +1,42 @@
+# Simplified values for testing against a local cluster (minikube, kind,
+# Docker Desktop Kubernetes) - no TLS, no OAuth (dummy authenticator), so it
+# comes up with nothing but `helm upgrade --install` and a `kubectl port-forward`.
+proxy:
+  https:
+    enabled: false
+
+singleuser:
+  image:
+    name: rickmcgeer/jupyter-ai-image
+    tag: "dev"
+
+  extraEnv:
+    GOOGLE_APPLICATION_CREDENTIALS: /etc/ai-key/key.json
+    GOOGLE_CLOUD_PROJECT: battery-data-296318
+    VERTEXAI_PROJECT: battery-data-296318
+    VERTEXAI_LOCATION: us-central1
+
+  storage:
+    capacity: 5G
+    extraVolumeMounts:
+      - name: ai-key
+        mountPath: /etc/ai-key
+        readOnly: true
+    extraVolumes:
+      - name: ai-key
+        secret:
+          secretName: jupyter-ai-key
+
+  memory:
+    guarantee: 512M
+    limit: 2G
+  cpu:
+    guarantee: 0.1
+    limit: 1
+
+hub:
+  config:
+    JupyterHub:
+      authenticator_class: dummy
+    DummyAuthenticator:
+      password: dev

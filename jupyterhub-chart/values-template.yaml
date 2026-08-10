@@ -1,0 +1,98 @@
+# Run ./prepare-values.sh <env-file> to generate values.yaml from this file
+# via envsubst. See setup-env.sh.sample for the variables it expects:
+#
+# GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET - Google OAuth app
+# NAMESPACE      - Kubernetes namespace for the Hub
+# HUB_URL        - public hostname the Hub is served at
+# GOOGLE_CLOUD_PROJECT - GCP project the builtin Vertex AI key belongs to
+# VERTEXAI_LOCATION    - Vertex AI region (e.g. "us-central1")
+
+proxy:
+  https:
+    enabled: true
+    hosts:
+      - "$HUB_URL"
+    letsencrypt:
+      contactEmail: info@berkeley.edu
+
+singleuser:
+  image:
+    name: rickmcgeer/jupyter-ai-image
+    tag: "latest"
+
+  extraEnv:
+    GOOGLE_APPLICATION_CREDENTIALS: /etc/ai-key/key.json
+    GOOGLE_CLOUD_PROJECT: $GOOGLE_CLOUD_PROJECT
+    VERTEXAI_PROJECT: $GOOGLE_CLOUD_PROJECT
+    VERTEXAI_LOCATION: $VERTEXAI_LOCATION
+
+  storage:
+    capacity: 10G
+    extraVolumeMounts:
+      - name: ai-key
+        mountPath: /etc/ai-key
+        readOnly: true
+    extraVolumes:
+      - name: ai-key
+        secret:
+          secretName: jupyter-ai-key
+
+  # No initContainer needed to seed the default Jupyter AI model - unlike
+  # coreshell-hub's setup, jupyter-ai-image already does this itself (see
+  # its before-notebook.d hook), since it runs on every container start
+  # regardless of how the container is launched.
+
+  networkPolicy:
+    enabled: true
+
+  defaultUrl: "/lab"
+
+  memory:
+    limit: 2G
+    guarantee: 100M
+  cpu:
+    limit: 1
+    guarantee: 0.1
+
+hub:
+  extraConfig:
+    announcement: |
+      c.JupyterHub.template_vars = {
+        "announcement": '''
+        <div style="padding:10px; background:#e0f3ff; color:#123;">
+          <b>JupyterAI is now available!</b><br>
+          Open JupyterLab and click the JupyterAI icon in the sidebar to start chatting,
+          or use the "AI Tools" row in the Launcher for Claude Code / Codex.
+        </div>
+        '''
+      }
+  config:
+    JupyterHub:
+      authenticator_class: google
+    GoogleOAuthenticator:
+      username_claim: email
+      client_id: $GOOGLE_OAUTH_CLIENT_ID
+      client_secret: $GOOGLE_OAUTH_CLIENT_SECRET
+      oauth_callback_url: "https://$HUB_URL/hub/oauth_callback"
+      scope:
+        - openid
+        - email
+        - profile
+      # Restrict to Berkeley accounts rather than any Google account. Add
+      # specific non-berkeley.edu users to Authenticator.allowed_users below
+      # if needed.
+      hosted_domain:
+        - berkeley.edu
+      login_service: "Berkeley"
+    Authenticator:
+      allow_all: false
+      admin_users:
+        # TODO: fill in
+        - rick.mcgeer@berkeley.edu
+      allowed_users: []
+
+cull:
+  enabled: true
+  timeout: 3600
+  every: 300
+  maxAge: 14400
