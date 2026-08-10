@@ -4,8 +4,11 @@
 # GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET - Google OAuth app
 # NAMESPACE      - Kubernetes namespace for the Hub
 # HUB_URL        - public hostname the Hub is served at
-# GOOGLE_CLOUD_PROJECT - GCP project the builtin Vertex AI key belongs to
+# GOOGLE_CLOUD_PROJECT - GCP project the builtin Vertex AI access belongs to
 # VERTEXAI_LOCATION    - Vertex AI region (e.g. "us-central1")
+# JUPYTER_KSA          - Kubernetes ServiceAccount name bound to the Vertex
+#                         AI GCP service account via Workload Identity (see
+#                         scripts/setup-workload-identity.sh)
 
 proxy:
   https:
@@ -20,22 +23,20 @@ singleuser:
     name: rickmcgeer/jupyter-ai-image
     tag: "latest"
 
+  # Bound to the GCP service account via GKE Workload Identity (see
+  # scripts/setup-workload-identity.sh) - no downloaded key file, no
+  # Secret to mount or rotate. Google client libraries (litellm's Vertex AI
+  # provider included) auto-discover these credentials via the GKE metadata
+  # server; nothing in the image or its env needs to point at a key.
+  serviceAccountName: $JUPYTER_KSA
+
   extraEnv:
-    GOOGLE_APPLICATION_CREDENTIALS: /etc/ai-key/key.json
     GOOGLE_CLOUD_PROJECT: $GOOGLE_CLOUD_PROJECT
     VERTEXAI_PROJECT: $GOOGLE_CLOUD_PROJECT
     VERTEXAI_LOCATION: $VERTEXAI_LOCATION
 
   storage:
     capacity: 10G
-    extraVolumeMounts:
-      - name: ai-key
-        mountPath: /etc/ai-key
-        readOnly: true
-    extraVolumes:
-      - name: ai-key
-        secret:
-          secretName: jupyter-ai-key
 
   # No initContainer needed to seed the default Jupyter AI model - unlike
   # coreshell-hub's setup, jupyter-ai-image already does this itself (see

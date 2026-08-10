@@ -1,6 +1,13 @@
 # Simplified values for testing against a local cluster (minikube, kind,
 # Docker Desktop Kubernetes) - no TLS, no OAuth (dummy authenticator), so it
 # comes up with nothing but `helm upgrade --install` and a `kubectl port-forward`.
+#
+# No Vertex AI wiring here: Workload Identity is a GKE-only mechanism (it
+# binds a KSA to a GSA via the GKE metadata server), so there's no way to
+# exercise the builtin-model path on a local cluster - this config is only
+# useful for checking the Hub/chart/image come up and the UI (including the
+# AI Tools launcher tiles) renders. Users can still add their own provider
+# key by hand through the AI Settings UI to test chat locally.
 proxy:
   https:
     enabled: false
@@ -10,22 +17,8 @@ singleuser:
     name: rickmcgeer/jupyter-ai-image
     tag: "dev"
 
-  extraEnv:
-    GOOGLE_APPLICATION_CREDENTIALS: /etc/ai-key/key.json
-    GOOGLE_CLOUD_PROJECT: battery-data-296318
-    VERTEXAI_PROJECT: battery-data-296318
-    VERTEXAI_LOCATION: us-central1
-
   storage:
     capacity: 5G
-    extraVolumeMounts:
-      - name: ai-key
-        mountPath: /etc/ai-key
-        readOnly: true
-    extraVolumes:
-      - name: ai-key
-        secret:
-          secretName: jupyter-ai-key
 
   memory:
     guarantee: 512M

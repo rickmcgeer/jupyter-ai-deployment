@@ -4,3 +4,6 @@ export NAMESPACE=jupyter-ai
 export HUB_URL=jupyter-ai.berkeley.edu
 export GOOGLE_CLOUD_PROJECT=
 export VERTEXAI_LOCATION=us-central1
+# Kubernetes ServiceAccount name from setup-workload-identity.sh - must
+# match the ksa-name argument you ran it with (default: jupyter-ai-vertex).
+export JUPYTER_KSA=jupyter-ai-vertex
