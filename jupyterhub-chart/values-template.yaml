@@ -36,6 +36,30 @@ singleuser:
     name: rickmcgeer/jupyter-ai-image
     tag: "latest"
 
+  # Explicit slugs matching the three profiles from the pre-migration
+  # deployment (see global-data-plane-hub repo) - NOT for offering a real
+  # choice going forward (all three point at the same new image), but
+  # because JupyterHub persists each user's last-selected profile slug in
+  # its own database (the hub-db-dir PVC) and replays it on every respawn.
+  # Dropping profileList entirely broke respawning for any user who'd
+  # previously picked a non-default profile: kubespawner tries to validate
+  # their stored slug against an empty profile_list and hard-fails with
+  # "No such profile: <slug>. Options include: " (an internal detail, not
+  # something a spawning user did wrong). New users only ever see "BearBorg
+  # (Custom)" (the default) - the other two only exist to keep old stored
+  # selections resolvable.
+  profileList:
+    - slug: bearborg-original
+      default: true
+      display_name: BearBorg original
+      description: Jupyter AI v3, Claude Code / Codex, Vertex AI Gemini builtin
+    - slug: bearborg-custom
+      display_name: "BearBorg (Custom)"
+      description: Jupyter AI v3, Claude Code / Codex, Vertex AI Gemini builtin
+    - slug: datascience-311
+      display_name: Datascience 3.11
+      description: Jupyter AI v3, Claude Code / Codex, Vertex AI Gemini builtin
+
   # Bound to the GCP service account via GKE Workload Identity (see
   # scripts/setup-workload-identity.sh) - no downloaded key file, no
   # Secret to mount or rotate. Google client libraries (litellm's Vertex AI
