@@ -11,12 +11,14 @@
 # service (jupyterhub-chart/values-template.yaml) - both now come from the
 # same $GDP_API_TOKEN in setup-env.sh.
 #
-# GOOGLE_APPLICATION_CREDENTIALS points to a path with no corresponding
-# volume/volumeMount here - the key file is baked directly into the
-# rickmcgeer/gdp-sidecar image itself, not mounted from a Secret. Carried
-# over as-is; not fixed here (candidate for Workload-Identity-style
-# credential handling later, same as the rest of this repo already does
-# for Vertex AI, but that's a separate change).
+# Storage: tables and their .perm permission records live in the
+# $GDP_BUCKET GCS bucket, accessed via GKE Workload Identity as the
+# gdp-service KSA (scripts/setup-gdp-workload-identity.sh) - no key file.
+# STORAGE_ENVIRONMENT=Google is what actually selects GCS in gdp-table-repo's
+# app.py; the old manifest only set CLOUD_ENVIRONMENT, which the app never
+# reads, so the service silently ran on in-memory storage (and the
+# GOOGLE_APPLICATION_CREDENTIALS key file it pointed at never existed in the
+# image). CLOUD_ENVIRONMENT is kept below only for continuity.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -34,6 +36,7 @@ spec:
       labels:
         app: gdp
     spec:
+      serviceAccountName: gdp-service
       containers:
         - name: gdp-service
           image: rickmcgeer/gdp-sidecar:20251023
@@ -51,11 +54,11 @@ spec:
             - name: GOOGLE_PROJECT
               value: $GOOGLE_CLOUD_PROJECT
             - name: BUCKET_NAME
-              value: bearborg-static
+              value: $GDP_BUCKET
+            - name: STORAGE_ENVIRONMENT
+              value: Google
             - name: CLOUD_ENVIRONMENT
               value: Google
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: /home/mcgeer/jupyter-ai/.keys/civil-pattern-439416-k1-c15436db5baf.json
             - name: JUPYTERHUB_API_URL
               value: http://hub:8081/hub/api
             - name: JUPYTERHUB_URL

@@ -14,3 +14,6 @@ export JUPYTER_KSA=jupyter-ai-vertex
 # Shared token between the Hub and gdp-service - must match
 # GDP_SERVICE_API_TOKEN in gdp-service's own Deployment env.
 export GDP_API_TOKEN=
+# GCS bucket holding gdp-service's tables and .perm files; created by
+# scripts/setup-gdp-workload-identity.sh (access via Workload Identity).
+export GDP_BUCKET=bearborg-gdp-tables
