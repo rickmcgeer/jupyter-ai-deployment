@@ -45,9 +45,11 @@ singleuser:
   # previously picked a non-default profile: kubespawner tries to validate
   # their stored slug against an empty profile_list and hard-fails with
   # "No such profile: <slug>. Options include: " (an internal detail, not
-  # something a spawning user did wrong). New users only ever see "BearBorg
-  # (Custom)" (the default) - the other two only exist to keep old stored
-  # selections resolvable.
+  # something a spawning user did wrong). Users no longer see these at all:
+  # the spawn form is hidden (see hide-spawn-form under hub.extraConfig), so
+  # everyone gets the default profile and a stored slug just has to stay
+  # resolvable. Keep all three slugs - six users have `bearborg-original` or
+  # `bearborg-custom` stored.
   profileList:
     - slug: bearborg-original
       default: true
@@ -138,6 +140,12 @@ hub:
         name: bearborg-custom-templates
 
   extraConfig:
+    # No spawn form: JupyterHub then spawns straight from GET /hub/spawn
+    # ("If no options_form is enabled, GET triggers spawn directly"), skipping
+    # the page that offered the three identical profiles. The profile list
+    # itself stays (see singleuser.profileList) so stored slugs keep resolving.
+    hide-spawn-form: |
+      c.KubeSpawner.options_form = ''
     announcement: |
       c.JupyterHub.template_vars = {
         "announcement": '''
@@ -240,6 +248,12 @@ hub:
   config:
     JupyterHub:
       authenticator_class: google
+      # Land on /hub/spawn after login instead of the Hub home page: with the
+      # spawn form hidden that starts the server and goes straight to JupyterLab
+      # (or straight to it if already running). The Hub Services menu that home
+      # page offered is now Launcher tiles (hub-services-launcher); the Hub
+      # Control Panel is still under JupyterLab's File menu.
+      default_url: /hub/spawn
       allow_origin: "*"
       disable_check_xsrf: true
       template_paths:
