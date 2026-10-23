@@ -39,7 +39,7 @@ spec:
       serviceAccountName: gdp-service
       containers:
         - name: gdp-service
-          image: rickmcgeer/gdp-sidecar:20251023
+          image: rickmcgeer/gdp-sidecar:20261023-114242
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 5000
