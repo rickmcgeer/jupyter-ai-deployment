@@ -1,0 +1,81 @@
+# gdp-service: the Global Data Plane sidecar (sdtp server + per-user table
+# uploads/permissions), OAuth-registered with the Hub via
+# jupyterhub-chart/values-template.yaml's gdp-service-config extraConfig
+# block. NOT part of the jupyterhub Helm release - deployed separately by
+# scripts/deploy.sh via `kubectl apply`, same as galyleo-deployment does
+# for galyleo-service on galyleo-beta.
+#
+# Ported from global-data-plane-hub/raw-manifests/gdp-service.yaml (a
+# 2026-08-10 snapshot of what was live, applied by hand up to that point).
+# GDP_SERVICE_API_TOKEN must equal the Hub's own `api_token` for the `gdp`
+# service (jupyterhub-chart/values-template.yaml) - both now come from the
+# same $GDP_API_TOKEN in setup-env.sh.
+#
+# GOOGLE_APPLICATION_CREDENTIALS points to a path with no corresponding
+# volume/volumeMount here - the key file is baked directly into the
+# rickmcgeer/gdp-sidecar image itself, not mounted from a Secret. Carried
+# over as-is; not fixed here (candidate for Workload-Identity-style
+# credential handling later, same as the rest of this repo already does
+# for Vertex AI, but that's a separate change).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: gdp
+  name: gdp-service
+  namespace: $NAMESPACE
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gdp
+  template:
+    metadata:
+      labels:
+        app: gdp
+    spec:
+      containers:
+        - name: gdp-service
+          image: rickmcgeer/gdp-sidecar:20251023
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5000
+              protocol: TCP
+          env:
+            - name: DEBUG_GDP
+              value: "false"
+            - name: DEBUG_GDP_USER
+              value: rick@galyleo.ai
+            - name: DEBUG
+              value: "false"
+            - name: GOOGLE_PROJECT
+              value: $GOOGLE_CLOUD_PROJECT
+            - name: BUCKET_NAME
+              value: bearborg-static
+            - name: CLOUD_ENVIRONMENT
+              value: Google
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: /home/mcgeer/jupyter-ai/.keys/civil-pattern-439416-k1-c15436db5baf.json
+            - name: JUPYTERHUB_API_URL
+              value: http://hub:8081/hub/api
+            - name: JUPYTERHUB_URL
+              value: https://$HUB_URL
+            - name: OAUTH_CALLBACK_URL
+              value: /services/gdp/callback
+            - name: GDP_SERVICE_API_TOKEN
+              value: "$GDP_API_TOKEN"
+            - name: GDP_CLIENT_ID
+              value: service-gdp
+            - name: GDP_BASE_URL
+              value: https://$HUB_URL/services/gdp
+            - name: GDP_AUTH_TOKEN_VAR
+              value: JUPYTER_HUB_TOKEN
+            - name: FLASK_STATIC_URL
+              value: /services/gdp/static
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi

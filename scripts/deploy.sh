@@ -15,8 +15,15 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Sourced for HUB_URL/GOOGLE_CLOUD_PROJECT/GDP_API_TOKEN, needed below to
+# render gdp-service's manifests. Positional args still win over whatever
+# this sets for RELEASE/NAMESPACE, so existing invocations are unaffected.
+ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/../jupyterhub-chart/setup-env.sh}"
+[ -f "$ENV_FILE" ] && source "$ENV_FILE"
+
 RELEASE="${1:-jupyter-ai-1}"
-NAMESPACE="${2:-jupyter-ai}"
+NAMESPACE="${2:-${NAMESPACE:-jupyter-ai}}"
 VALUES_FILE="${3:-$SCRIPT_DIR/../jupyterhub-chart/values.yaml}"
 CHART_VERSION="${CHART_VERSION:-4.0.0}"
 
@@ -31,3 +38,15 @@ helm upgrade --install "$RELEASE" jupyterhub/jupyterhub \
   --version "$CHART_VERSION" \
   --namespace="$NAMESPACE" --create-namespace \
   -f "$VALUES_FILE"
+
+# gdp-service (the Global Data Plane sidecar) isn't part of the Helm
+# release - deployed separately via kubectl, same as galyleo-service is
+# for galyleo-beta. See gdp-service/deployment.yaml for why.
+deploy_yaml() {
+  local template="$1"
+  envsubst < "$template" | kubectl apply -n "$NAMESPACE" -f -
+}
+
+echo "Deploying gdp-service..."
+deploy_yaml "$SCRIPT_DIR/../gdp-service/deployment.yaml"
+deploy_yaml "$SCRIPT_DIR/../gdp-service/service.yaml"
