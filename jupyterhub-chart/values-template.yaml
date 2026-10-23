@@ -34,7 +34,7 @@ proxy:
 singleuser:
   image:
     name: rickmcgeer/jupyter-ai-image
-    tag: "latest"
+    tag: "hub-services-20261023-140025"
 
   # Explicit slugs matching the three profiles from the pre-migration
   # deployment (see global-data-plane-hub repo) - NOT for offering a real
@@ -179,6 +179,10 @@ hub:
             "self",
             "access:servers",
             "access:services",
+            # Lets JupyterLab list the Hub's services (display: True) to show
+            # them as Launcher tiles - see the hub-services-launcher extension.
+            "list:services",
+            "read:services",
           ],
           "users": ["*"],
         }
