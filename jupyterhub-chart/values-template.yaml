@@ -34,7 +34,7 @@ proxy:
 singleuser:
   image:
     name: rickmcgeer/jupyter-ai-image
-    tag: "hub-services-20261023-140025"
+    tag: "hub-services-20261023-143101"
 
   # Explicit slugs matching the three profiles from the pre-migration
   # deployment (see global-data-plane-hub repo) - NOT for offering a real
@@ -179,12 +179,32 @@ hub:
             "self",
             "access:servers",
             "access:services",
-            # Lets JupyterLab list the Hub's services (display: True) to show
-            # them as Launcher tiles - see the hub-services-launcher extension.
+            # list/read:services here too, not just on the server role below: a
+            # token's effective scopes are capped by its OWNER's scopes, so a
+            # regular user's server token can't list services unless the user
+            # role has the scope as well (admins pass via the admin role).
             "list:services",
             "read:services",
           ],
           "users": ["*"],
+        }
+      )
+      # Single-user servers' own API tokens: the defaults (access:servers!server,
+      # users:activity!user) plus list/read:services, so the hub-services-launcher
+      # extension can ask the Hub which services to show as Launcher tiles. It has
+      # to be the server's token, not the user's browser session: the Hub checks
+      # XSRF even on API GETs, with a cookie JupyterLab's page can't read. Token
+      # scopes are fixed at creation, so a server must restart to pick up changes
+      # here.
+      c.JupyterHub.load_roles.append(
+        {
+          "name": "server",
+          "scopes": [
+            "access:servers!server",
+            "users:activity!user",
+            "list:services",
+            "read:services",
+          ],
         }
       )
       c.JupyterHub.load_roles.append(
