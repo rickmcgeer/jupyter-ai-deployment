@@ -1,0 +1,32 @@
+---
+# Replace "savio" with your cluster's id: the file name (without .yml) of your
+# cluster in OOD's config, i.e. the name shown under OOD's Clusters menu.
+cluster: "savio"
+
+form:
+  - bc_account
+  - bc_queue
+  - qos
+  - bc_num_hours
+  - cpus
+  - memory_gb
+
+attributes:
+  qos:
+    label: Slurm QoS
+    help: "Required on Savio for most accounts, e.g. savio_normal (see the BRC docs). Leave blank if your account doesn't need one."
+    value: ""
+  bc_num_hours:
+    value: 4
+  cpus:
+    widget: number_field
+    label: CPU cores
+    value: 4
+    min: 1
+    max: 32
+  memory_gb:
+    widget: number_field
+    label: Memory (GB)
+    value: 16
+    min: 1
+    max: 256

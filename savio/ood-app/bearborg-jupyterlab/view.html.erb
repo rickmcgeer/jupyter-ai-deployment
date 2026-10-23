@@ -1,0 +1,8 @@
+<%# The "Connect" button: opens JupyterLab through OOD's /node/ reverse proxy,
+    passing the one-time token as a query parameter. %>
+<form action="/node/<%= host %>/<%= port %>/lab" method="get" target="_blank">
+  <input type="hidden" name="token" value="<%= password %>">
+  <button class="btn btn-primary" type="submit">
+    <i class="fa fa-external-link"></i> Connect to BearBorg JupyterLab
+  </button>
+</form>

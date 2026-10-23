@@ -1,0 +1,8 @@
+---
+name: BearBorg JupyterLab
+category: Interactive Apps
+subcategory: Servers
+role: batch_connect
+description: |
+  JupyterLab with Jupyter AI and the BearBorg persona, from the
+  rickmcgeer/jupyter-ai-image container (run with Apptainer).

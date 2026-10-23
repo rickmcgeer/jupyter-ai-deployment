@@ -1,0 +1,10 @@
+---
+batch_connect:
+  template: "basic"
+script:
+  native:
+    - "--cpus-per-task=<%= cpus %>"
+    - "--mem=<%= memory_gb %>G"
+<% if qos.to_s.strip != "" -%>
+    - "--qos=<%= qos.to_s.strip %>"
+<% end -%>

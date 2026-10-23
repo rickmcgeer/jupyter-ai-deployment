@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Runs inside the Slurm job. OOD's "basic" template sets $host, $port and
+# $password (random, one-time) before this runs.
+#
+# ~/bearborg/run-jupyter-ai.sh is savio/run-jupyter-ai.sh from the
+# jupyter-ai-deployment repo (pulls the image on first use, then runs Lab).
+# Invoked through `bash` so it works even if an upload dropped the exec bit.
+export PORT="${port}"
+export BASE_URL="/node/${host}/${port}/"
+export JUPYTER_TOKEN="${password}"
+exec bash "$HOME/bearborg/run-jupyter-ai.sh"
