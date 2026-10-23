@@ -40,16 +40,17 @@ from jupyterhub import orm
 
 src = "/srv/jupyterhub/jupyterhub.sqlite"
 
-bak = src + ".bak-" + time.strftime("%Y%m%d-%H%M%S")
-shutil.copy2(src, bak)
-print("backup:", bak)
-
 db = orm.new_session_factory("sqlite:///" + src)()
 tok = orm.APIToken.find(db, OLD_TOKEN)
 if tok is None:
     raise SystemExit("old token does not match any registered token - nothing to do")
 if tok.service is None or tok.service.name != SERVICE:
     raise SystemExit("token does not belong to service %r - aborting" % SERVICE)
+
+# Only back up once we know we're actually going to delete something.
+bak = src + ".bak-" + time.strftime("%Y%m%d-%H%M%S")
+shutil.copy2(src, bak)
+print("backup:", bak)
 
 print("deleting token id %s (prefix %s) of service %r" % (tok.id, tok.prefix, SERVICE))
 db.delete(tok)
