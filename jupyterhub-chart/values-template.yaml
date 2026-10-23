@@ -186,7 +186,11 @@ hub:
             "list:services",
             "read:services",
           ],
-          "users": ["*"],
+          # No `users:` key on purpose. This is the default `user` role: when
+          # `users` is omitted the Hub leaves membership alone (everyone gets the
+          # role at login). An explicit list - including the old ["*"], which is
+          # NOT a wildcard but a literal username - makes membership an exact
+          # match, revoking the role from every real user on each Hub restart.
         }
       )
       # Single-user servers' own API tokens: the defaults (access:servers!server,
@@ -217,7 +221,8 @@ hub:
             "tokens",
           ],
           "services": ["gdp"],
-          "users": ["*"],
+          # (was `"users": ["*"]`: not a wildcard, just created a phantom user
+          # named "*" holding this role. The role is for the gdp service.)
         }
       )
 
