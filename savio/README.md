@@ -21,9 +21,10 @@ cp ~/jupyter-ai-deployment/savio/run-jupyter-ai.sh ~/bearborg/
 cp -r ~/jupyter-ai-deployment/savio/ood-app/bearborg-jupyterlab ~/ondemand/dev/
 ```
 
-Edit `~/ondemand/dev/bearborg-jupyterlab/form.yml` and set `cluster:` to your
-cluster's OOD id. Then in OOD: **Develop -> My Sandbox Apps (Development)** ->
-BearBorg JupyterLab.
+The app's `form.yml` already uses `cluster: "brc"`, BRC's OOD cluster id (visible in
+`~/ondemand/data/sys/dashboard/batch_connect/sys/*/context.json` after launching any
+BRC app). Then in OOD: **Develop -> My Sandbox Apps (Development)** -> BearBorg
+JupyterLab. To update after a `git pull`, re-run the `cp -r` above.
 
 ## Vertex AI credentials
 

@@ -1,7 +1,7 @@
 ---
-# Replace "savio" with your cluster's id: the file name (without .yml) of your
-# cluster in OOD's config, i.e. the name shown under OOD's Clusters menu.
-cluster: "savio"
+# The OOD cluster id on BRC is "brc" (from your own sessions: context.json says
+# "cluster":"brc").
+cluster: "brc"
 
 form:
   - bc_account

@@ -1,0 +1,14 @@
+# Sourced inside the Slurm job before script.sh. OOD's "basic" template only
+# defines the helpers (find_port, create_passwd) and has already set $host; the
+# app has to set $port and $password itself - script.sh and the Connect button
+# (view.html.erb) both rely on them.
+
+# script.sh runs as a child process, and the BRC `module` command is a shell
+# function: export it so `module load apptainer` works there.
+[[ $(type -t module) == "function" ]] && export -f module
+
+# A free port on this node for JupyterLab.
+export port=$(find_port ${host})
+
+# One-time token the Connect button hands to JupyterLab.
+export password="$(create_passwd 16)"
