@@ -83,11 +83,22 @@ if [ "$BASE_URL" = "/" ]; then
   echo
 fi
 
+# Behind Open OnDemand's proxy the browser's Origin (https://ood.brc.berkeley.edu)
+# differs from the Host the server sees (<node>:<port>), so Jupyter blocks every
+# cookie-authenticated API call and websocket as "Cross Origin" - terminals hang and
+# kernels never connect. Trust exactly the OOD origin (anchored regex, so lookalikes
+# like ood.brc.berkeley.edu.evil.example.com stay blocked). Only when proxied.
+OOD_ORIGIN_PAT="${OOD_ORIGIN_PAT:-^https://ood[.]brc[.]berkeley[.]edu\$}"
+ALLOW_ORIGIN_PAT=""
+[ "$BASE_URL" != "/" ] && ALLOW_ORIGIN_PAT="$OOD_ORIGIN_PAT"
+
+# Values go in as positional arguments ($1 $2 $3), not spliced into the script text.
 exec "$APPTAINER" exec --cleanenv --writable-tmpfs "$SIF" bash -c '
   for hook in /usr/local/bin/before-notebook.d/10-jupyter-ai-defaults.py \
               /usr/local/bin/before-notebook.d/12-galyleo-persona-settings-schema.py; do
     "$hook" || echo "note: $hook failed (continuing)"
   done
-  exec jupyter lab --no-browser --ip=0.0.0.0 --port='"$PORT"' \
-       --ServerApp.base_url='"$BASE_URL"' --ServerApp.root_dir="$HOME"
-'
+  exec jupyter lab --no-browser --ip=0.0.0.0 --port="$1" \
+       --ServerApp.base_url="$2" --ServerApp.allow_origin_pat="$3" \
+       --ServerApp.root_dir="$HOME"
+' _ "$PORT" "$BASE_URL" "$ALLOW_ORIGIN_PAT"
